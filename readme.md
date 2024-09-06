@@ -9,7 +9,9 @@ $ tree -L 2     # list the project structure in 2 levels, might want to `sudo ap
 .
 ├── bot
 │   ├── bot.py
-│   └── __init__.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   └── settings.py
 ├── env
 │   ├── bin
 │   ├── include
@@ -17,14 +19,10 @@ $ tree -L 2     # list the project structure in 2 levels, might want to `sudo ap
 │   ├── lib64 -> lib
 │   ├── pyvenv.cfg
 │   └── share
-├── __pycache__
-│   └── settings.cpython-310.pyc
-├── readme.txt
-├── requirements.txt
-└── settings.py
-
-8 directories, 7 files
-
+├── LICENSE
+├── main.py
+├── readme.md
+└── requirements.txt
 ```
 
 
@@ -57,7 +55,7 @@ $ tree -L 2     # list the project structure in 2 levels, might want to `sudo ap
 
 4. **Run the bot**
     ```bash
-    python3 bot/bot.py
+    python3 main.py
     ```
 
 ## Files Overview
