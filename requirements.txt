@@ -1,0 +1,2 @@
+python-telegram-bot==21.4
+ipython==8.27.0 # mainly to test coroutines in the shell
