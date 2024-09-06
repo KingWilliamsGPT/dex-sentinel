@@ -4,27 +4,25 @@ This is a Python-based Telegram bot project for the **Dex Sentinel bot**.
 The bot is set up using a virtual environment, and the main bot logic is contained in the `bot.py` file.
 
 ## Project Structure
+
 ```bash
 $ tree -L 2     # list the project structure in 2 levels, might want to `sudo apt install tree` on linux
 .
-├── bot
-│   ├── bot.py
+├── app
 │   ├── __init__.py
-│   ├── __pycache__
+│   ├── main.py
+│   └── routes.py
+├── bot
+│   ├── __init__.py
+│   ├── bot.py
 │   └── settings.py
-├── env
-│   ├── bin
-│   ├── include
-│   ├── lib
-│   ├── lib64 -> lib
-│   ├── pyvenv.cfg
-│   └── share
+├── .env.example
 ├── LICENSE
-├── main.py
 ├── readme.md
 └── requirements.txt
+├── server.py
+├── utils.py
 ```
-
 
 ## Getting Started
 
@@ -36,35 +34,33 @@ $ tree -L 2     # list the project structure in 2 levels, might want to `sudo ap
 ### Setup Instructions
 
 1. **Clone the repository**:
+
    ```bash
    git clone <bot-url>
-   cd telegram-bot
+   cd dex-sentinel
    ```
 
-2. **Setup Virtual environment**
+2. **Setup environment**
+
     ```bash
-    python3 -m venv env
-    source env/bin/activate
+    ./scripts/setup.sh
     ```
 
+3. **Run the server**
 
-3. **Install Dependencies**
     ```bash
-    pip install -r requirements.txt
-    ```
-
-4. **Run the bot**
-    ```bash
-    python3 main.py
+    ./scripts/start.sh
     ```
 
 ## Files Overview
 
+- **app/main.py:** It sets up the bot and creates the api server.
+- **app/routes.py:** Contains the routes for the api server.
 - **bot/bot.py:** The main script that contains the bot's logic and handlers.
-- **settings.py:** Configuration file for storing your bot's settings, like the API token.
+- **bot/settings.py:** Configuration file for storing the bot's settings, like the API token.
 - **requirements.txt:** Lists the Python packages required to run the bot.
-- **env/:** The virtual environment directory (generated after setup).
-
+- **server.py** Script for starting the api server.
+- **util.py** Contains utility functions.
 
 ## Usage
 
@@ -72,4 +68,4 @@ Once the bot is running, it can be interacted with via Telegram. Make sure to co
 
 ## License
 
-This project is licensed under the MIT License. See LICENSE for more details.
+This project is licensed under the MIT License. See LICENSE for more details
