@@ -21,7 +21,6 @@ class Settings:
     DEBUG: bool = env.bool("DEBUG", False)
     LOG_LEVEL: int = INFO if DEBUG else WARNING
 
-    BOT_TOKEN: str = env.str("TELEGRAM_TOKEN")
     SECRET_TOKEN: str = env.str("SECRET_TOKEN")
      
     BOT_WEB_URL: str = env.str("BOT_WEB_URL")
