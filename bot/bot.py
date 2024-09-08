@@ -1,7 +1,6 @@
 from json import dumps
 from traceback import format_exception
 from html import escape as html_escape
-from dexscreener import DexscreenerClient
 
 from telegram.constants import ParseMode
 from telegram import BotCommand, Update
@@ -9,8 +8,11 @@ from telegram.ext import filters, Application, CommandHandler, MessageHandler, C
 
 from .utils import format_token
 from settings import get_settings, get_logger
+from storage import get_storage, DatabaseTables
+from .keyboards import TokenPaginationKeyboard, TokenDetailsKeyboard
 
 
+storage = get_storage()
 settings = get_settings()
 logger = get_logger(__name__)
 
@@ -44,8 +46,6 @@ class Bot:
         context_types = ContextTypes(context = BotContext)
         self.application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
 
-        self.client = DexscreenerClient()
-
 
     async def setup(self, secret_token: str, bot_web_url: str) -> None:
         # Set webhook url and secret_key
@@ -61,6 +61,8 @@ class Bot:
         self.application.add_handler( CommandHandler("pair", self.cmd_pair) )
         self.application.add_handler( CommandHandler("search", self.cmd_search) )
     
+        self.application.add_handler(TokenDetailsKeyboard.create_handler())
+        self.application.add_handler(TokenPaginationKeyboard.create_handler())
         self.application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message) )
 
 
@@ -125,7 +127,8 @@ class Bot:
 
     async def cmd_help(self, update: Update, context: BotContext):
         text = (
-            "Use the /pair command to get blockchain token pair information\n\n"
+            "Use the /pair command to get blockchain token pair information\n"
+            "You can request more details when using this command\n\n"
             "Usage\n"
             "/pair [blockchain id] <token address>\n\n"
             "Examples<\n"
@@ -143,43 +146,43 @@ class Bot:
     
 
     async def cmd_about(self, update: Update, context: BotContext):
+        """Handles """
         text = (
-            "This bot was designed to retrieve information on blockchain token pairs "
-            "for convenient usage on Telegram"
+            f"Hi, I'm {context.bot.username}\n"
+            "I was designed to retrieve information on blockchain token pairs for convenient usage on Telegram\n\n"
+
+            "Copyright 2024 Samurai Coder\n"
+            "This bot is licensed under the <a href='https://opensource.org/license/mit' title='MIT License'>MIT</a>\n"
+            "Source code: <a href='https://github.com/KingWilliamsGPT/dex-sentinel/' title='Github repository'>https://github.com/KingWilliamsGPT/dex-sentinel</a>"
         )
         await update.effective_message.reply_html(text, reply_to_message_id = update.effective_message.id)
 
 
     async def cmd_pair(self, update: Update, context: BotContext):
+        """Handles the pair command"""
         if len(context.args) != 2: return
         chain, address = context.args
 
-        token = await self.client.get_token_pair_async(chain, address)
+        token = await TokenPaginationKeyboard.client.get_token_pair_async(chain, address)
 
         if token:
             text = format_token(token)
+            keyboard = await TokenDetailsKeyboard.generate_markup("less", update, context)
+            await update.effective_message.reply_html(text, reply_to_message_id = update.effective_message.id, reply_markup = keyboard)
+            # Have to enclose values in quotes for TEXT column in sqlite3
+            storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_pair = dumps(f"{chain} {address}"))
+
         else:
             text = f"Token not found on {chain} at {address}"
-            
-        await update.effective_message.reply_html(text, reply_to_message_id = update.effective_message.id)
-    
+            await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
+        
 
     async def cmd_search(self, update: Update, context: BotContext):
+        """Handles the search command"""
         if len(context.args) != 1: return
         identifier = context.args[0]
-        tokens = await self.client.search_pairs_async(identifier)
-        
-        if len(tokens) > 0:    
-            for token in tokens:
-                text = (
-                    "Chain ID: {token.chain_id}\n"
-                    "Dex ID: {token.dex_id}\n"
-                    "Pair Address: {token.pair_address}\n"
-                )
-                text = text.format(token = token)
-                await update.effective_message.reply_html(text, reply_to_message_id = update.effective_message.id)
-        
-        else:
-            await update.effective_message.reply_text(f"{identifier} not found", reply_to_message_id = update.effective_message.id)
-
+    
+        # Have to enclose values in quotes for TEXT column in sqlite3
+        storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
+        await TokenPaginationKeyboard.handle(update, context)
 

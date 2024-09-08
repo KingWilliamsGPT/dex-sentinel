@@ -4,7 +4,7 @@
 from telegram.constants import MessageLimit
 
 from environs import Env
-from logging import INFO, WARNING, basicConfig, getLogger
+from logging import DEBUG as DEBUG_LEVEL, INFO, basicConfig, getLogger
 
 
 
@@ -17,9 +17,10 @@ env.read_env()
 # Create a class for storing settings
 class Settings:
     PORT: int = env.int("PORT")
+    DB_PATH: str = env.str("DB_PATH")
     HOST: str = env.str("HOST", "0.0.0.0")
     DEBUG: bool = env.bool("DEBUG", False)
-    LOG_LEVEL: int = INFO if DEBUG else WARNING
+    LOG_LEVEL: int = DEBUG_LEVEL if DEBUG else INFO
 
     BOT_TOKEN: str = env.str("TELEGRAM_TOKEN")
     SECRET_TOKEN: str = env.str("SECRET_TOKEN")

@@ -8,19 +8,23 @@ The bot is set up using a virtual environment, and the main bot logic is contain
 ```bash
 $ tree -L 2     # list the project structure in 2 levels, might want to `sudo apt install tree` on linux
 .
-├── app
-│   ├── __init__.py
-│   ├── main.py
-│   └── routes.py
 ├── bot
 │   ├── __init__.py
-│   ├── bot.py
-│   └── settings.py
+│   └── bot.py
+│   └── keyboards.py
+│   └── utils.py
+├── scripts
+│   └── setup.sh
+│   └── start.sh
 ├── .env.example
 ├── LICENSE
+├── main.py
+├── routes.py
 ├── readme.md
 └── requirements.txt
 ├── server.py
+├── settings.py
+├── storage.py
 ├── utils.py
 ```
 
