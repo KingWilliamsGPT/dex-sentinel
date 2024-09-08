@@ -3,14 +3,18 @@
 This is a Python-based Telegram bot project for the **Dex Sentinel bot**.
 The bot is set up using a virtual environment, and the main bot logic is contained in the `bot.py` file.
 
-
 ## How to use the bot
+
 The main feature of the bot is to retrieve and display real-time blockchain token pair information from decentralized exchanges (DEX) based on user queries in Telegram.
 
 ### Bot commands
+
 - `/start:` Welcomes the user and provides instructions to use the bot.
+
 - `/help:` Explains how to use the `/pair` and `/search` commands to get token information.
+
 - `/about:` Provides information about the bot and its purpose.
+
 - `/pair:` Fetches and returns token pair information from DEX based on the provided blockchain ID and token address. If no token is found, it informs the user.
 
 ```
@@ -18,7 +22,7 @@ The main feature of the bot is to retrieve and display real-time blockchain toke
 ```
 
 if found the bot response the below or `Token not found on ethereum at 0xAbc123456789
-`
+
 ```yaml
 Token Name: Example Token (EXM)
 Pair: EXM/ETH
@@ -26,11 +30,15 @@ Current Price: $123.45
 Liquidity: $1,000,000
 Volume (24h): $500,000
 ```
+
 - `/search:`: Searches for token pairs by blockchain ID, token address, or token name.
+
 `/search <blockchain id|token address|token name>`
+
 ```
 /search WBTC/USDC
 ```
+
 Reponse
 
 ```yaml
@@ -99,10 +107,10 @@ $ tree -L 2     # list the project structure in 2 levels, might want to `sudo ap
 
 ## Files Overview
 
-- **app/main.py:** It sets up the bot and creates the api server.
-- **app/routes.py:** Contains the routes for the api server.
 - **bot/bot.py:** The main script that contains the bot's logic and handlers.
 - **bot/settings.py:** Configuration file for storing the bot's settings, like the API token.
+- **main.py:** It sets up the bot and creates the api server.
+- **routes.py:** Contains the routes for the api server.
 - **requirements.txt:** Lists the Python packages required to run the bot.
 - **server.py** Script for starting the api server.
 - **util.py** Contains utility functions.
