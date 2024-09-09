@@ -186,3 +186,20 @@ class Bot:
         storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
         await TokenPaginationKeyboard.handle(update, context)
 
+        # adding a filter command 
+        async def cmd_filter(self, update: Update, context: BotContext):
+            if len(context.args) < 1:
+                text = "Usage: /filter [filter criteria]"
+                await update.effective_message.reply_text(text)
+                return
+
+            filter_criteria = context.args[0].lower()
+            filtered_data = await self.apply_filter_logic(filter_criteria)
+
+            if not filtered_data:
+                text = f"No data found for filter: {filter_criteria}"
+                await update.effective_message.reply_text(text)
+                return
+
+            formatted_text = format_filtered_data(filtered_data)
+            await update.effective_message.reply_text(formatted_text)
