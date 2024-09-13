@@ -3,13 +3,14 @@ from traceback import format_exception
 from html import escape as html_escape
 
 from telegram.constants import ParseMode
-from telegram import BotCommand, Update
-from telegram.ext import filters, Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext
+from telegram import BotCommand, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import filters, Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext,CallbackQueryHandler
 
 from .utils import format_token
 from settings import get_settings, get_logger
 from storage import get_storage, DatabaseTables
 from .keyboards import TokenPaginationKeyboard, TokenDetailsKeyboard
+import aiohttp
 
 
 storage = get_storage()
@@ -64,6 +65,9 @@ class Bot:
         self.application.add_handler(TokenDetailsKeyboard.create_handler())
         self.application.add_handler(TokenPaginationKeyboard.create_handler())
         self.application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message) )
+        self.application.add_handler(CallbackQueryHandler(self.filter_callback))
+        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_token_search))
+
 
 
     # Bot methods
@@ -123,27 +127,27 @@ class Bot:
     async def cmd_start(self, update: Update, context: BotContext):
         text = f"Welcome {update.effective_user.full_name} !\nUse the /help command to see what this bot can do !"
         await update.effective_message.reply_text(text)
-
-
-    async def cmd_help(self, update: Update, context: BotContext):
-        text = (
-            "Use the /pair command to get blockchain token pair information\n"
-            "You can request more details when using this command\n\n"
-            "Usage\n"
-            "/pair [blockchain id] <token address>\n\n"
-            "Examples<\n"
-            "/pair ethereum 0xAbc123456789\n\n\n"
-
-            "Use the /search command to get token pairs matching the specified address or name\n\n"
-            "Usage\n"
-            "/search <blockchain id|token address|token name>\n\n"
-            "Examples\n"
-            "/search 0xAbc123456789\n"
-            "/search WBTC/USDC\n"
-            "/search WBTC"
-        )
-        await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
     
+    #help command with filter added
+    async def cmd_help(self, update: Update, context: BotContext):
+    text = (
+        "Use the /pair command to get blockchain token pair information.\n"
+        "You can request more details when using this command.\n\n"
+        "Usage:\n"
+        "/pair [blockchain id] <token address>\n\n"
+        "Examples:\n"
+        "/pair ethereum 0xAbc123456789\n\n\n"
+
+        "Use the /search command to get token pairs matching the specified address or name.\n\n"
+        "Usage:\n"
+        "/search <blockchain id|token address|token name>\n\n"
+        "Examples:\n"
+        "/search 0xAbc123456789\n"
+        "/search WBTC/USDC\n"
+        "/search WBTC\n\n"
+    )
+    await update.effective_message.reply_text(text, reply_to_message_id=update.effective_message.id)
+
 
     async def cmd_about(self, update: Update, context: BotContext):
         """Handles """
@@ -181,25 +185,103 @@ class Bot:
         """Handles the search command"""
         if len(context.args) != 1: return
         identifier = context.args[0]
+
+            # Step 1: Show filtering options (All Blockchain / Blockchain Specific / Token Specific)
+        keyboard = [
+            [InlineKeyboardButton("All Blockchain", callback_data='filter_all')],
+            [InlineKeyboardButton("Blockchain Specific", callback_data='filter_blockchain')],
+            [InlineKeyboardButton("Token Specific", callback_data='filter_token')]
+    ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.effective_message.reply_text(
+            "Select a filter for your search:",
+            reply_markup=reply_markup
+        )
+
+
+    async def filter_callback(self, update: Update, context: BotContext):
+        query = update.callback_query
+        await query.answer()  # Acknowledge the button click
+
+        if query.data == "filter_all":
+            await query.edit_message_text(text="Fetching all blockchains...")
+
+            # Fetch blockchain data from API
+            blockchains = await self.fetch_blockchains_from_api()
+            keyboard = [[InlineKeyboardButton(chain, callback_data=chain)] for chain in blockchains]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await query.edit_message_text(text="Select blockchain:", reply_markup=reply_markup)
+
+        elif query.data == "filter_blockchain":
+            # Prompt the user to select a specific blockchain
+            keyboard = [
+                [InlineKeyboardButton("Ethereum", callback_data="ethereum")],
+                [InlineKeyboardButton("Solana", callback_data="solana")],
+                [InlineKeyboardButton("Polygon", callback_data="polygon")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+         await query.edit_message_text(text="Select blockchain:", reply_markup=reply_markup)
+
+        elif query.data == "filter_token":
+            # Ask the user for a token ID
+            await query.edit_message_text(text="Please send the token ID.")
+
+
     
-        # Have to enclose values in quotes for TEXT column in sqlite3
-        storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
-        await TokenPaginationKeyboard.handle(update, context)
+    # Have to enclose values in quotes for TEXT column in sqlite3
+    storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
+    await TokenPaginationKeyboard.handle(update, context)
 
-        # adding a filter command 
-        async def cmd_filter(self, update: Update, context: BotContext):
-            if len(context.args) < 1:
-                text = "Usage: /filter [filter criteria]"
-                await update.effective_message.reply_text(text)
-                return
 
-            filter_criteria = context.args[0].lower()
-            filtered_data = await self.apply_filter_logic(filter_criteria)
+    async def fetch_blockchains_from_api(self):
+        # This is where you'd call the API to get available blockchains
+        url = "https://example-api.com/blockchains"  # Replace with actual API URL
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                blockchains = await response.json()
+                return [chain['name'] for chain in blockchains]  # Assuming API returns a list of blockchain names
 
-            if not filtered_data:
-                text = f"No data found for filter: {filter_criteria}"
-                await update.effective_message.reply_text(text)
-                return
+    import aiohttp  # for asynchronous HTTP requests
 
-            formatted_text = format_filtered_data(filtered_data)
-            await update.effective_message.reply_text(formatted_text)
+    async def fetch_blockchains():
+        url = "https://api.example.com/blockchains"  # Replace with the actual API
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return [blockchain['name'] for blockchain in data]  # Adjust based on actual API response
+                return ["Ethereum", "Solana", "Polygon"]  # Fallback if API call fails
+    
+    async def filter_callback(self, update: Update, context: BotContext):
+        query = update.callback_query
+        await query.answer()
+
+        if query.data == "filter_token":
+            # Ask for token input
+            await query.edit_message_text(text="Please enter the token ID:")
+            # Capture the token ID in a separate message handler
+
+        
+    async def handle_token_search(self, update: Update, context: BotContext):
+        token_id = update.effective_message.text
+        token_details = await fetch_token_details(token_id)  # Implement API call
+
+        if token_details:
+            text = format_token(token_details)  # Use the format_token from utils.py
+            keyboard = [
+                [InlineKeyboardButton("View Details", callback_data=f"details_{token_id}")],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.effective_message.reply_text(text, reply_markup=reply_markup)
+        else:
+            await update.effective_message.reply_text("Token not found.")
+
+
+    async def fetch_token_details(token_id: str):
+        url = f"https://api.example.com/tokens/{token_id}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    return await response.json()
+                return None
