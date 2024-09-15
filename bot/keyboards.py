@@ -8,6 +8,7 @@ from telegram.ext import CallbackQueryHandler, CallbackContext
 from telegram import error, Update, InlineKeyboardMarkup, InlineKeyboardButton
 
 from .utils import format_token
+from .filters import TokenFilter
 from storage import get_storage, get_logger, DatabaseTables
 
 storage = get_storage()
@@ -105,12 +106,15 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
 
     @classmethod
     async def get_data(cls, identifier: str, page: int, update: Update, context: CallbackContext) -> tuple[TokenPair, int]:
-        tokens = await cls.client.search_pairs_async(identifier)
-        if tokens:
-            token = tokens[page-1]
-        else:
-            token = None
-        return token, len(tokens)
+        identifier = identifier.split("/filter")
+        filter_text = " ".join(identifier[1:]).strip() if len(identifier) > 1 else ""
+        identifier = identifier[0]
+       
+        tokens = await cls.client.search_pairs_async(identifier) 
+        filtered = list(TokenFilter.filter(filter_text, tokens)) if filter_text else tokens
+        token = filtered[page-1] if filtered else None
+        
+        return token, len(filtered)
                 
 
     @classmethod
@@ -128,7 +132,6 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
             if message:
                 try:
                     query_search = " ".join(message.text.split(" ")[1:])
-                    logger.info(f"{query_search}")
                     storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(query_search))
                     user_data = storage.get_user_data(update.effective_user.id, DatabaseTables.USERS)
                     found = True

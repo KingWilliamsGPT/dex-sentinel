@@ -179,8 +179,9 @@ class Bot:
 
     async def cmd_search(self, update: Update, context: BotContext):
         """Handles the search command"""
-        if len(context.args) != 1: return
-        identifier = context.args[0]
+        # Returns if argument length is not 1 and `/filter` was not found in text
+        if len(context.args) != 1 and context.args.count('/filter') != 1: return
+        identifier = " ".join(context.args)
     
         # Have to enclose values in quotes for TEXT column in sqlite3
         storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
