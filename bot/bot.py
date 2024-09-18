@@ -44,7 +44,7 @@ class Bot:
         
         # Set updater to None so updates are handled by webhook
         context_types = ContextTypes(context = BotContext)
-        self.application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
+        self.application = Application.builder().token(bot_token).updater(None).econtext_types(context_types).build()
 
 
     async def setup(self, secret_token: str, bot_web_url: str) -> None:
