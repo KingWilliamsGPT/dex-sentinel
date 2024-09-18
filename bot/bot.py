@@ -140,7 +140,15 @@ class Bot:
             "Examples\n"
             "/search 0xAbc123456789\n"
             "/search WBTC/USDC\n"
-            "/search WBTC"
+            "/search WBTC\n\n\n"
+
+            "Filters can be applied to the search results\n\n"
+            "Usage\n"
+            "<search parameters> /filters [chain=chain id], [dex=dex id]\n\n"
+            "Examples\n"
+            "/search 0xAbc123456789 /filter chain=ton\n"
+            "/search WBTC/USDC /filter dex=stonfi\n"
+            "/search WBTC /filter chain=ton,dex=stonfi"
         )
         await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
     
