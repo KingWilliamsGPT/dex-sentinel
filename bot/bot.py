@@ -45,7 +45,7 @@ class Bot:
         # Set updater to None so updates are handled by webhook
         context_types = ContextTypes(context = BotContext)
         self.application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
-
+  
 
     async def setup(self, secret_token: str, bot_web_url: str) -> None:
         # Set webhook url and secret_key
@@ -121,34 +121,40 @@ class Bot:
     
     # Bot commands
     async def cmd_start(self, update: Update, context: BotContext):
-        text = f"Welcome {update.effective_user.full_name} !\nUse the /help command to see what this bot can do !"
+        text = (
+            f"Welcome, {update.effective_user.full_name} !\n"
+            "I am a bot designed to help you easily access and analyze blockchain token data\n\n"
+            "With me, you can:\n"
+            "- Retrieve token pair details using the /pair command\n"
+            "- Search for token pairs by blockchain, address, or name with the /search command\n"
+            "- Apply filters to refine your results by specific chains or DEXs using the /filter option\n\n"
+            "To begin, simply enter /pair or /search followed by the relevant details, I will provide the information you need\n"
+            "For further guidance, type /help. I'm here to assist you in navigating the world of cryptocurrency tokens with ease."
+            )
         await update.effective_message.reply_text(text)
 
 
     async def cmd_help(self, update: Update, context: BotContext):
         text = (
-            "Use the /pair command to get blockchain token pair information\n"
-            "You can request more details when using this command\n\n"
-            "Usage\n"
-            "/pair [blockchain id] <token address>\n\n"
-            "Examples<\n"
-            "/pair ethereum 0xAbc123456789\n\n\n"
+            "Commands\n\n"
 
-            "Use the /search command to get token pairs matching the specified address or name\n\n"
-            "Usage\n"
-            "/search <blockchain id|token address|token name>\n\n"
-            "Examples\n"
+            "1. /pair\nGet token pair info for a specific blockchain\n\n"
+            "Usage: /pair <blockchain id> <token address>\n\n"
+            "Example: /pair ethereum 0xAbc123456789\n\n\n"
+            
+            "2. /search\nFind token pairs by address or name\n\n"
+            "Usage: /search <blockchain id|token address|token name>\n\n"
+            "Examples:\n\n"
             "/search 0xAbc123456789\n"
             "/search WBTC/USDC\n"
             "/search WBTC\n\n\n"
-
-            "Filters can be applied to the search results\n\n"
-            "Usage\n"
-            "<search parameters> /filters [chain=chain id], [dex=dex id]\n\n"
-            "Examples\n"
+            
+            "3. Filters\nApply filters to refine search results\n\n"
+            "Usage: /search <blockchain id|token address|token name> /filters [chain=chain id,] [dex=dex id,]\n\n"
+            "Examples:\n"
             "/search 0xAbc123456789 /filter chain=ton\n"
             "/search WBTC/USDC /filter dex=stonfi\n"
-            "/search WBTC /filter chain=ton,dex=stonfi"
+            "/search WBTC /filter chain=ton,dex=stonf\n\n\n"
         )
         await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
     
@@ -156,8 +162,7 @@ class Bot:
     async def cmd_about(self, update: Update, context: BotContext):
         """Handles """
         text = (
-            f"Hi, I'm {context.bot.username}\n"
-            "I was designed to retrieve information on blockchain token pairs for convenient usage on Telegram\n\n"
+            f"Hi, I'm {context.bot.full_name}\n"
 
             "Copyright 2024 Samurai Coder\n"
             "This bot is licensed under the <a href='https://opensource.org/license/mit' title='MIT License'>MIT</a>\n"
