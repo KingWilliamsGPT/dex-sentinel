@@ -17,9 +17,9 @@ class TokenFilter:
             filtered = filter(lambda token: cls.filter_token(token, filters), tokens)
         else:
             filtered = tokens
-        
+
         return filtered
-    
+
     @classmethod
     def filter_token(cls, token: TokenPair, filters: list[dict]) -> True:
         passed = True
@@ -34,7 +34,7 @@ class TokenFilter:
                 case "dex":
                     passed = cls.filter_by_dex(token, i)
         return passed
-    
+
     @classmethod
     def parse_filters(cls, text: str) -> list[dict]:
         pattern = "(?P<name>(\w)+)(\s)*(?P<op>(=|<|>|<=|>=))(\s)*(?P<value>[^,]+)"
@@ -46,35 +46,34 @@ class TokenFilter:
             matched = re.search(pattern, chunk)
             if not matched:
                 break
-            
+
             last = matched.span()[1] + 1
             parsed = {key.lower(): value for key, value in matched.groupdict().items()}
             filters.append(parsed)
-        
+
         return filters
-    
+
 
     # Place filter methods here
 
     @classmethod
     def filter_by_chain(cls, token: TokenPair, args: dict) -> bool:
         return token.chain_id == args["value"]
-    
+
     @classmethod
     def filter_by_dex(cls, token: TokenPair, args: dict) -> bool:
         return token.dex_id == args["value"]
-    
+
     @classmethod
     def filter_by_mcap(cls, token: TokenPair, args: dict) -> bool:
         return token.dex_id == args["value"]
-    
+
     @classmethod
     def filter_by_time(cls, token: TokenPair, args: dict) -> bool:
         try:
             value = datetime(args["value"])
         except Exception as exception:
             return False
-        
+
         # TODO: Finish the timestamp filter, add a reliable way to convert user input to datetime
         return False
-    

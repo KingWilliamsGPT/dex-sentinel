@@ -24,7 +24,7 @@ class Settings:
 
     BOT_TOKEN: str = env.str("TELEGRAM_TOKEN")
     SECRET_TOKEN: str = env.str("SECRET_TOKEN")
-     
+
     BOT_WEB_URL: str = env.str("BOT_WEB_URL")
     HEALTH_URL: str= env.str("HEALTH_URL", "/health/")
     WEBHOOK_URL: str = env.str("WEBHOOK_URL", "/webhook/")
