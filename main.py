@@ -42,13 +42,13 @@ async def lifespan(app: FastAPI):
         # Runs when app starts
         logger.info(f"\n🚀 Bot starting up ...\nDebugging is {'enabled' if settings.DEBUG else 'disabled'}")
         await bot.application.start()
-        
+
         yield
-        
+
         # Runs after app shuts down
         logger.info("\n⛔ Bot shutting down ...\n")
         await bot.application.stop()
-        
+
 
 
 app = FastAPI( title = "BotFastAPI", description = "A webhook api for a telegram DexScreener bot", lifespan = lifespan )

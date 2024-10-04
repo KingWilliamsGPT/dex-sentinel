@@ -31,8 +31,8 @@ class BotContext(CallbackContext):
 async def log_in_channels(text: str, context: BotContext):
     for chat_id in settings.LOG_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
-    
- 
+
+
 async def send_to_developers(text: str, context: BotContext):
     for chat_id in settings.DEVELOPER_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
@@ -41,7 +41,7 @@ async def send_to_developers(text: str, context: BotContext):
 class Bot:
     def __init__(self, bot_token: str) -> None:
         """Set up bot application and a web application for handling the incoming requests."""
-        
+
         # Set updater to None so updates are handled by webhook
         context_types = ContextTypes(context = BotContext)
         self.application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
@@ -60,7 +60,7 @@ class Bot:
         self.application.add_handler( CommandHandler("about", self.cmd_about) )
         self.application.add_handler( CommandHandler("pair", self.cmd_pair) )
         self.application.add_handler( CommandHandler("search", self.cmd_search) )
-    
+
         self.application.add_handler(TokenDetailsKeyboard.create_handler())
         self.application.add_handler(TokenPaginationKeyboard.create_handler())
         self.application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message) )
@@ -72,9 +72,9 @@ class Bot:
         # Register commands for bot menu
         commands = [
             BotCommand("start", "Start the bot"),
-            BotCommand("help", "Get help about this bot"), 
+            BotCommand("help", "Get help about this bot"),
             BotCommand("about", "Get information about the bot"),
-            
+
             BotCommand("pair", "Get token pair matching the specified blockchain and address"),
             BotCommand("search", "Get token pairs matching the specified address or name"),
         ]
@@ -104,7 +104,7 @@ class Bot:
             f"<pre><u>context.bot_data</u> = {html_escape(dumps(context.bot_data, indent = 2, ensure_ascii = False))}</pre>\n\n"
             f"<pre><u>context.chat_data</u> = {html_escape(dumps(context.chat_data, indent = 2, ensure_ascii = False))}</pre>\n\n"
             f"<pre><u>context.user_data</u> = {html_escape(dumps(context.user_data, indent = 2, ensure_ascii = False))}</pre>\n\n",
-            
+
             "<b>Traceback</b>\n"
             f"<pre>{html_escape(tb_string)}</pre>\n",
         ):
@@ -118,38 +118,51 @@ class Bot:
         text = "Use /help to get a list of commands"
         await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.message_id)
 
-    
+
     # Bot commands
     async def cmd_start(self, update: Update, context: BotContext):
-        text = f"Welcome {update.effective_user.full_name} !\nUse the /help command to see what this bot can do !"
+        text = (
+            f"Welcome, {update.effective_user.first_name} !\n"
+            "I am a bot designed to help you easily access and analyze blockchain token data\n\n"
+            "With me, you can:\n"
+            "- Retrieve token pair details using the /pair command\n"
+            "- Search for token pairs by blockchain, address, or name with the /search command\n"
+            "- Apply filters to refine your results by specific chains or DEXs using the /filter option\n\n"
+            "To begin, simply enter /pair or /search followed by the relevant details, I will provide the information you need\n"
+            "For further guidance, type /help. I'm here to assist you in navigating the world of cryptocurrency tokens with ease."
+            )
         await update.effective_message.reply_text(text)
 
 
     async def cmd_help(self, update: Update, context: BotContext):
         text = (
-            "Use the /pair command to get blockchain token pair information\n"
-            "You can request more details when using this command\n\n"
-            "Usage\n"
-            "/pair [blockchain id] <token address>\n\n"
-            "Examples<\n"
-            "/pair ethereum 0xAbc123456789\n\n\n"
+            "Commands\n\n"
 
-            "Use the /search command to get token pairs matching the specified address or name\n\n"
-            "Usage\n"
-            "/search <blockchain id|token address|token name>\n\n"
-            "Examples\n"
+            "1. /pair\nGet token pair info for a specific blockchain\n\n"
+            "Usage: /pair <blockchain id> <token address>\n\n"
+            "Example: /pair ethereum 0xAbc123456789\n\n\n"
+
+            "2. /search\nFind token pairs by address or name\n\n"
+            "Usage: /search <blockchain id|token address|token name>\n\n"
+            "Examples:\n\n"
             "/search 0xAbc123456789\n"
             "/search WBTC/USDC\n"
-            "/search WBTC"
+            "/search WBTC\n\n\n"
+
+            "3. Filters\nApply filters to refine search results\n\n"
+            "Usage: /search <blockchain id|token address|token name> /filters [chain=chain id,] [dex=dex id,]\n\n"
+            "Examples:\n"
+            "/search 0xAbc123456789 /filter chain=ton\n"
+            "/search WBTC/USDC /filter dex=stonfi\n"
+            "/search WBTC /filter chain=ton,dex=stonf\n\n\n"
         )
         await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
-    
+
 
     async def cmd_about(self, update: Update, context: BotContext):
         """Handles """
         text = (
-            f"Hi, I'm {context.bot.username}\n"
-            "I was designed to retrieve information on blockchain token pairs for convenient usage on Telegram\n\n"
+            f"Hi, I'm {context.bot.first_name}\n"
 
             "Copyright 2024 Samurai Coder\n"
             "This bot is licensed under the <a href='https://opensource.org/license/mit' title='MIT License'>MIT</a>\n"
@@ -175,13 +188,14 @@ class Bot:
         else:
             text = f"Token not found on {chain} at {address}"
             await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
-        
+
 
     async def cmd_search(self, update: Update, context: BotContext):
         """Handles the search command"""
-        if len(context.args) != 1: return
-        identifier = context.args[0]
-    
+        # Returns if argument length is not 1 and `/filter` was not found in text
+        if len(context.args) != 1 and context.args.count('/filter') != 1: return
+        identifier = " ".join(context.args)
+
         # Have to enclose values in quotes for TEXT column in sqlite3
         storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
         await TokenPaginationKeyboard.handle(update, context)

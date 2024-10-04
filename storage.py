@@ -47,10 +47,10 @@ class Storage:
             # Insert an entry for the user in the table
             user_data[tablename] = {}
             sql = f"""INSERT OR IGNORE INTO {tablename} (user_id) VALUES (?)"""
-            
+
             cursor.execute(sql, (user_id,))
             connection.commit()
-            
+
             # Iterate over the column name and column value and set them in the cache, ignoring the user_id which is indexed at 0
             for key, value in zip(cls.column_names[tablename][1:], cursor.execute(f"""SELECT * FROM {tablename} WHERE user_id=?""", (user_id,)).fetchone()[1:] ):
                 user_data[tablename][key] = value
@@ -65,10 +65,10 @@ class Storage:
         """Setup user data if not in cache and get requested table from cache"""
         if user_id not in cls.data_cache:
             cls.setup_user_data(user_id)
-        
+
         user_data = cls.data_cache[user_id]
         assert tablename in user_data, f"{tablename} not a valid user data table"
-        
+
         table = user_data[tablename]
         return table
 
@@ -90,7 +90,7 @@ class Storage:
 
         for key in changes:
             user_data[tablename][key] = changes[key]
-        
+
         cls.data_cache[user_id] = user_data
 
 

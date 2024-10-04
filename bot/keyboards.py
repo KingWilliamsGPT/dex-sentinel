@@ -8,6 +8,7 @@ from telegram.ext import CallbackQueryHandler, CallbackContext
 from telegram import error, Update, InlineKeyboardMarkup, InlineKeyboardButton
 
 from .utils import format_token
+from .filters import TokenFilter
 from storage import get_storage, get_logger, DatabaseTables
 
 storage = get_storage()
@@ -23,7 +24,7 @@ class KeyboardHandler:
     @classmethod
     async def generate_markup(cls, update: Update, context: CallbackContext) -> InlineKeyboardMarkup:
         """This function should generate the inline keyboard markup"""
-        raise NotImplementedError    
+        raise NotImplementedError
 
     @classmethod
     def create_handler(cls) -> CallbackQueryHandler:
@@ -40,7 +41,7 @@ class KeyboardHandler:
         else:
             data = None
         return data
-        
+
 
     @classmethod
     async def handle(cls, update: Update, context: CallbackContext):
@@ -54,8 +55,8 @@ class KeyboardHandler:
         if not update.effective_user:
             return False
         return True
-    
-    
+
+
     @classmethod
     async def run(cls, update: Update, context: CallbackContext):
         """This is the callback for the callback query handler"""
@@ -81,7 +82,7 @@ class PaginationKeyboardHandler(KeyboardHandler):
 
         markup = InlineKeyboardMarkup(keyboard)
         return markup
-    
+
     @classmethod
     def parse_data(cls, update: Update, context: CallbackContext) -> str:
         data = KeyboardHandler.parse_data(update, context)
@@ -90,7 +91,7 @@ class PaginationKeyboardHandler(KeyboardHandler):
         except (ValueError, TypeError):
             data = None
         return data
-    
+
 
     @classmethod
     async def get_data(cls, page: int, update: Update, context: CallbackContext):
@@ -105,13 +106,16 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
 
     @classmethod
     async def get_data(cls, identifier: str, page: int, update: Update, context: CallbackContext) -> tuple[TokenPair, int]:
+        identifier = identifier.split("/filter")
+        filter_text = " ".join(identifier[1:]).strip() if len(identifier) > 1 else ""
+        identifier = identifier[0]
+
         tokens = await cls.client.search_pairs_async(identifier)
-        if tokens:
-            token = tokens[page-1]
-        else:
-            token = None
-        return token, len(tokens)
-                
+        filtered = list(TokenFilter.filter(filter_text, tokens)) if filter_text else tokens
+        token = filtered[page-1] if filtered else None
+
+        return token, len(filtered)
+
 
     @classmethod
     async def handle(cls, update: Update, context: CallbackContext) -> None:
@@ -119,7 +123,7 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
         new = not bool(page)
         page = page or 1
         user_data = storage.get_user_data(update.effective_user.id, DatabaseTables.USERS)
-        
+
         # This happens if the server restarted and a user tries to interact with a previously generated keyboard
         if user_data["query_search"] is None:
             # Try to get the arguments from the replied to message
@@ -128,7 +132,6 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
             if message:
                 try:
                     query_search = " ".join(message.text.split(" ")[1:])
-                    logger.info(f"{query_search}")
                     storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(query_search))
                     user_data = storage.get_user_data(update.effective_user.id, DatabaseTables.USERS)
                     found = True
@@ -141,16 +144,16 @@ class TokenPaginationKeyboard(PaginationKeyboardHandler):
 
         # Load value in TEXT column from string
         identifier = loads(user_data["query_search"])
-            
+
         token, last = await cls.get_data(identifier, page, update, context)
         if token:
             text = f"{page} of {last}\n\n" + format_token(token)
-        
+
         else:
             text = f"Page {page} not found for {identifier}"
-        
+
         markup = await cls.generate_markup(page, last, update, context)
-        
+
         if new:
             await update.effective_message.reply_html(text, reply_to_message_id = update.effective_message.id, reply_markup = markup)
         else:
@@ -167,19 +170,19 @@ class TokenDetailsKeyboard(KeyboardHandler):
         keyboard = [
             [InlineKeyboardButton(f"{details.title()} Details", callback_data = f"{cls.pattern}:{details}"), ],
         ]
-        
+
         markup = InlineKeyboardMarkup(keyboard)
         return markup
-        
+
 
     @classmethod
     async def handle(cls, update: Update, context: CallbackContext):
         details = cls.parse_data(update, context).lower()
-        
+
         # TODO: Get the chain and address
         user_data = storage.get_user_data(update.effective_user.id, DatabaseTables.USERS)
         query_pair = user_data["query_pair"]
-        
+
         # This happens if the server restarted and a user tries to interact with a previously generated keyboard
         if query_pair is None:
             # Try to get the arguments from the replied to message
@@ -197,7 +200,7 @@ class TokenDetailsKeyboard(KeyboardHandler):
             if not found:
                 await update.effective_message.reply_text("Please search again")
                 return
-            
+
         chain, address = loads(query_pair).split(" ")
         token = await TokenPaginationKeyboard.client.get_token_pair_async(chain, address)
         text = format_token(token, details == "more")
@@ -205,4 +208,4 @@ class TokenDetailsKeyboard(KeyboardHandler):
         markup = await cls.generate_markup(details, update, context)
         await update.effective_message.edit_text(text, parse_mode = ParseMode.HTML, reply_markup = markup, disable_web_page_preview = False)
 
-    
+

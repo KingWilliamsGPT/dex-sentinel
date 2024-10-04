@@ -17,19 +17,19 @@ def format_token(token: TokenPair, detailed = False) -> str:
     finally:
         chain = token.chain_id.title()
         dex = token.dex_id.title()
-        
+
     text_format = (
         f"⛓ Chain ID:  {chain}\n"
         f"💱 DEX ID:  {dex}\n"
         + ("🔗 Token Pair:  {token.base_token.symbol}/{token.quote_token.symbol}\n\n" if not detailed else "") +
         "📍 Address:  {token.pair_address}\n\n"
         f"🗓️ Created:  {created}\n\n"
-    
+
         "<b>Prices</b>\n"
         "FDV:  {token.fdv:,} USD\n"
         "USD Price:    {token.price_usd:.16f} USD\n"
         "Native Price: {token.price_native:.16f} {token.quote_token.symbol}\n\n"
-        
+
     )
 
     if detailed:
@@ -38,7 +38,7 @@ def format_token(token: TokenPair, detailed = False) -> str:
             "Name:    {token.base_token.name}\n"
             "Symbol:  {token.base_token.symbol}\n"
             "📍 Address: {token.base_token.address}\n\n"
-            
+
             "<b>Quote Token</b>\n"
             "Name:    {token.quote_token.name}\n"
             "Symbol:  {token.quote_token.symbol}\n"
@@ -54,7 +54,7 @@ def format_token(token: TokenPair, detailed = False) -> str:
             "1h:  {token.transactions.h1.buys:>8,} bought  {token.transactions.h1.sells:>8,} sold\n"
             "6h:  {token.transactions.h6.buys:>8,} bought  {token.transactions.h6.sells:>8,} sold\n"
             "24h: {token.transactions.h24.buys:>8,} bought  {token.transactions.h24.sells:>8,} sold\n\n"
-            
+
             "<b>Volume</b>\n"
             "5m:   {token.volume.m5}\n"
             "1h:   {token.volume.h1}\n"
