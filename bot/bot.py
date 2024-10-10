@@ -58,8 +58,6 @@ class Bot:
         self.application.add_handler( CommandHandler("start", self.cmd_start) )
         self.application.add_handler( CommandHandler("help", self.cmd_help) )
         self.application.add_handler( CommandHandler("about", self.cmd_about) )
-        self.application.add_handler( CommandHandler("pair", self.cmd_pair) )
-        self.application.add_handler( CommandHandler("search", self.cmd_search) )
 
         self.application.add_handler(TokenDetailsKeyboard.create_handler())
         self.application.add_handler(TokenPaginationKeyboard.create_handler())
@@ -75,8 +73,6 @@ class Bot:
             BotCommand("help", "Get help about this bot"),
             BotCommand("about", "Get information about the bot"),
 
-            BotCommand("pair", "Get token pair matching the specified blockchain and address"),
-            BotCommand("search", "Get token pairs matching the specified address or name"),
         ]
         await self.application.bot.set_my_commands(commands)
 
@@ -115,8 +111,16 @@ class Bot:
         """Handles messages"""
         if not update.effective_message:
             return
-        text = "Use /help to get a list of commands"
-        await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.message_id)
+        
+        args = update.effective_message.text.split(" ")
+        # If text has more than one word or filter flag found from second word upwards
+        if len(args) == 1 or args[1:].count('/filter') == 1:
+            await self.cmd_search(update, context)
+        elif len(args) == 2:
+            await self.cmd_pair(update, context)
+        else:
+            text = "Use the /help command to learn how to use me"
+            await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.message_id)
 
 
     # Bot commands
@@ -136,25 +140,26 @@ class Bot:
 
     async def cmd_help(self, update: Update, context: BotContext):
         text = (
-            "Commands\n\n"
+            "Usage\nTo use the functions listed below, send me a message using the patterns defined\n"
+            "The parameters in [] brackets are optional\n\n"
 
-            "1. /pair\nGet token pair info for a specific blockchain\n\n"
-            "Usage: /pair <blockchain id> <token address>\n\n"
-            "Example: /pair ethereum 0xAbc123456789\n\n\n"
+            "1. Get token pair info for a specific blockchain\n\n"
+            "Pattern: <blockchain id> <token address>\n\n"
+            "Example: ethereum 0xAbc123456789\n\n\n"
 
-            "2. /search\nFind token pairs by address or name\n\n"
-            "Usage: /search <blockchain id|token address|token name>\n\n"
+            "2. Find token pairs by address or name\n\n"
+            "Pattern: <token address or token name>\n\n"
             "Examples:\n\n"
-            "/search 0xAbc123456789\n"
-            "/search WBTC/USDC\n"
-            "/search WBTC\n\n\n"
+            "0xAbc123456789\n"
+            "WBTC/USDC\n"
+            "WBTC\n\n\n"
 
             "3. Filters\nApply filters to refine search results\n\n"
-            "Usage: /search <blockchain id|token address|token name> /filters [chain=chain id,] [dex=dex id,]\n\n"
+            "Pattern: <token address or token name> /filters [chain=chain id,] [dex=dex id,]\n\n"
             "Examples:\n"
-            "/search 0xAbc123456789 /filter chain=ton\n"
-            "/search WBTC/USDC /filter dex=stonfi\n"
-            "/search WBTC /filter chain=ton,dex=stonf\n\n\n"
+            "0xAbc123456789 /filter chain=ton\n"
+            "WBTC/USDC /filter dex=stonfi\n"
+            "WBTC /filter chain=ton,dex=stonf\n\n\n"
         )
         await update.effective_message.reply_text(text, reply_to_message_id = update.effective_message.id)
 
@@ -173,9 +178,7 @@ class Bot:
 
     async def cmd_pair(self, update: Update, context: BotContext):
         """Handles the pair command"""
-        if len(context.args) != 2: return
-        chain, address = context.args
-
+        chain, address = update.effective_message.text.split(" ")
         token = await TokenPaginationKeyboard.client.get_token_pair_async(chain, address)
 
         if token:
@@ -192,9 +195,7 @@ class Bot:
 
     async def cmd_search(self, update: Update, context: BotContext):
         """Handles the search command"""
-        # Returns if argument length is not 1 and `/filter` was not found in text
-        if len(context.args) != 1 and context.args.count('/filter') != 1: return
-        identifier = " ".join(context.args)
+        identifier = update.effective_message.text
 
         # Have to enclose values in quotes for TEXT column in sqlite3
         storage.set_user_data(update.effective_user.id, DatabaseTables.USERS, query_search = dumps(identifier))
