@@ -98,7 +98,7 @@ class Bot:
 
             "<b>Context</b>\n"
             f"<pre><u>context.bot_data</u> = {html_escape(dumps(context.bot_data, indent = 2, ensure_ascii = False))}</pre>\n\n"
-            f"<pre><u>context.chat_data</u> = {html_escape(dumps(context.chat_data, indent = 2, ensure_ascii = False))}</pre>\n\n"
+            f" <pre><u>context.chat_data</u> = {html_escape(dumps(context.chat_data, indent = 2, ensure_ascii = False))}</pre>\n\n"
             f"<pre><u>context.user_data</u> = {html_escape(dumps(context.user_data, indent = 2, ensure_ascii = False))}</pre>\n\n",
 
             "<b>Traceback</b>\n"
@@ -129,10 +129,10 @@ class Bot:
             f"Welcome, {update.effective_user.first_name} !\n"
             "I am a bot designed to help you easily access and analyze blockchain token data\n\n"
             "With me, you can:\n"
-            "- Retrieve token pair details using the /pair command\n"
-            "- Search for token pairs by blockchain, address, or name with the /search command\n"
-            "- Apply filters to refine your results by specific chains or DEXs using the /filter option\n\n"
-            "To begin, simply enter /pair or /search followed by the relevant details, I will provide the information you need\n"
+            "- Retrieve token pair details by sending me the token's DEX and Blockchain\n"
+            "- Search for token pairs by sending me a token address or token name \n"
+            "- Apply filters to refine your results by specific chains or DEXs using the /filter flag\n\n"
+            "To start with, send a token name to me, I will provide the information you need\n"
             "For further guidance, type /help. I'm here to assist you in navigating the world of cryptocurrency tokens with ease."
             )
         await update.effective_message.reply_text(text)
@@ -167,7 +167,7 @@ class Bot:
     async def cmd_about(self, update: Update, context: BotContext):
         """Handles """
         text = (
-            f"Hi, I'm {context.bot.first_name}\n"
+            f"Hi, I'm {context.bot.first_name}\n\n"
 
             "Copyright 2024 Samurai Coder\n"
             "This bot is licensed under the <a href='https://opensource.org/license/mit' title='MIT License'>MIT</a>\n"
